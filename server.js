@@ -422,9 +422,31 @@ function getOrCreateUser(name, email = '', password = '') {
 
 function getSessionProfile(req) {
   const sessionUser = req.session.user;
-  const activeUser = sessionUser ? getUserByName(sessionUser.name) || getOrCreateUser(sessionUser.name) : getOrCreateUser(defaultProfile.name);
+  if (!sessionUser) {
+    return null;
+  }
+
+  const activeUser = getUserByName(sessionUser.name);
+  if (!activeUser) {
+    return null;
+  }
+
   req.session.user = { id: activeUser.id, name: activeUser.name, email: activeUser.email || '', role: activeUser.role || 'player' };
   return readUsers().find((user) => user.id === activeUser.id) || activeUser;
+}
+
+function requireAuth(req, res, next) {
+  if (!req.session.user || !getSessionProfile(req)) {
+    return res.status(401).json({ success: false, message: 'Please log in first' });
+  }
+  return next();
+}
+
+function requireAdmin(req, res, next) {
+  if (!req.session.user || req.session.user.role !== 'admin' || !getSessionProfile(req)) {
+    return res.status(403).json({ success: false, message: 'Admin access required' });
+  }
+  return next();
 }
 
 seedTournamentCatalog();
@@ -510,7 +532,7 @@ app.post('/api/tournaments', (req, res) => {
   return res.json({ success: true, tournament });
 });
 
-app.get('/api/app-state', (req, res) => {
+app.get('/api/app-state', requireAuth, (req, res) => {
   const profile = getSessionProfile(req);
 
   res.json({
@@ -552,12 +574,12 @@ app.post('/api/match-results', (req, res) => {
   return res.json({ success: true, result });
 });
 
-app.get('/api/moderation', (_, res) => {
+app.get('/api/moderation', requireAdmin, (_, res) => {
   const rows = db.prepare('SELECT * FROM match_results WHERE status = ? ORDER BY id DESC').all('pending');
   res.json({ results: rows });
 });
 
-app.post('/api/moderation/:id/approve', (req, res) => {
+app.post('/api/moderation/:id/approve', requireAdmin, (req, res) => {
   const resultId = Number(req.params.id);
   const row = db.prepare('SELECT * FROM match_results WHERE id = ?').get(resultId);
 
@@ -597,15 +619,41 @@ app.post('/api/moderation/:id/approve', (req, res) => {
 });
 
 app.post('/api/login', (req, res) => {
-  const { name, password = '' } = req.body || {};
+  const { name, password = '', role = '' } = req.body || {};
   const user = authenticateUser(name, password);
 
   if (!user) {
     return res.status(401).json({ success: false, message: 'Invalid login credentials' });
   }
 
+  if (role && role !== user.role) {
+    return res.status(403).json({ success: false, message: `This account is registered as ${user.role}` });
+  }
+
   req.session.user = { id: user.id, name: user.name, email: user.email || '', role: user.role || 'player' };
   return res.json({ success: true, user: req.session.user });
+});
+
+app.put('/api/password', requireAuth, (req, res) => {
+  const { currentPassword = '', newPassword = '', confirmPassword = '' } = req.body || {};
+  const profile = getSessionProfile(req);
+
+  if (!currentPassword || !newPassword || !confirmPassword) {
+    return res.status(400).json({ success: false, message: 'All password fields are required' });
+  }
+  if (newPassword.length < 6) {
+    return res.status(400).json({ success: false, message: 'New password must be at least 6 characters long' });
+  }
+  if (newPassword !== confirmPassword) {
+    return res.status(400).json({ success: false, message: 'New passwords do not match' });
+  }
+  if (!authenticateUser(profile.name, currentPassword)) {
+    return res.status(401).json({ success: false, message: 'Current password is incorrect' });
+  }
+
+  const { salt, hash } = hashPassword(newPassword);
+  db.prepare('UPDATE users SET password_hash = ?, password_salt = ? WHERE id = ?').run(hash, salt, profile.id);
+  return res.json({ success: true, message: 'Password changed successfully' });
 });
 
 app.post('/api/signup', (req, res) => {
@@ -633,7 +681,7 @@ app.post('/api/logout', (req, res) => {
   });
 });
 
-app.put('/api/profile', (req, res) => {
+app.put('/api/profile', requireAuth, (req, res) => {
   const { name, email = '' } = req.body || {};
   const trimmedName = String(name || '').trim();
   const trimmedEmail = String(email || '').trim();
