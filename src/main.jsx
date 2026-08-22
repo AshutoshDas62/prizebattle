@@ -23,7 +23,7 @@ function App(){
  const [moderationQueue,setModerationQueue]=useState([]);
  const [loading,setLoading]=useState(true);
  const [fetchError,setFetchError]=useState('');
- const [userName,setUserName]=useState('Ashutosh Singh');
+ const [userName,setUserName]=useState('Ashutosh Das');
  const [userEmail,setUserEmail]=useState('');
  const [userRole,setUserRole]=useState('player');
  const [isLoggedIn,setIsLoggedIn]=useState(false);

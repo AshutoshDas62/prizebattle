@@ -86,7 +86,7 @@ await initializeDatabase();
 
 const defaultProfile = {
   id: 1,
-  name: 'Ashutosh Singh',
+  name: 'Ashutosh Das',
   wallet: 1240,
   role: 'admin',
   joined: [],
@@ -253,6 +253,14 @@ function seedUsersTable() {
       db.prepare('UPDATE users SET role = ? WHERE id = ?').run(defaultProfile.role, row.id);
     }
   }
+}
+
+function migrateAdminName() {
+  if (!db) {
+    return;
+  }
+
+  db.prepare('UPDATE users SET name = ? WHERE name = ? AND role = ?').run('Ashutosh Das', 'Ashutosh Singh', 'admin');
 }
 
 function getRewardFromPlacement(placement) {
@@ -451,6 +459,7 @@ function requireAdmin(req, res, next) {
 
 seedTournamentCatalog();
 seedUsersTable();
+migrateAdminName();
 
 let tournaments = getTournamentCatalog();
 
