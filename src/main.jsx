@@ -40,7 +40,7 @@ function App(){
    setAppState(mergedState);
    setTournaments(tournamentData.tournaments ?? []);
    setModerationQueue(moderationData.results ?? []);
-   setUserName(stateData.user?.name || 'Ashutosh Singh');
+   setUserName(stateData.user?.name || 'Ashutosh Das');
    setUserEmail(stateData.user?.email || stateData.email || '');
    setUserRole(stateData.user?.role || stateData.role || 'player');
    setIsLoggedIn(Boolean(stateData.user));
@@ -71,7 +71,7 @@ function App(){
   e.preventDefault();
   const input = document.getElementById('login-name');
   const passwordInput = document.getElementById('login-password');
-  const name = (input?.value || userName || 'Ashutosh Singh').trim();
+  const name = (input?.value || userName || 'Ashutosh Das').trim();
   const password = (passwordInput?.value || '').trim();
   fetch('/api/login', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ name, password }) })
     .then(async (res)=>{
@@ -96,7 +96,7 @@ function App(){
   const emailInput = document.getElementById('signup-email');
   const passwordInput = document.getElementById('signup-password');
   const confirmPasswordInput = document.getElementById('signup-confirm-password');
-  const name = (nameInput?.value || 'Ashutosh Singh').trim();
+  const name = (nameInput?.value || 'Ashutosh Das').trim();
   const email = (emailInput?.value || '').trim();
   const password = (passwordInput?.value || '').trim();
   const confirmPassword = (confirmPasswordInput?.value || '').trim();
@@ -122,7 +122,7 @@ function App(){
     localStorage.removeItem(STORAGE_KEY);
     setAppState(getInitialState());
     setIsLoggedIn(false);
-    setUserName('Ashutosh Singh');
+    setUserName('Ashutosh Das');
     setUserEmail('');
     setUserRole('player');
     setPage('home');
@@ -131,7 +131,7 @@ function App(){
     localStorage.removeItem(STORAGE_KEY);
     setAppState(getInitialState());
     setIsLoggedIn(false);
-    setUserName('Ashutosh Singh');
+    setUserName('Ashutosh Das');
     setUserEmail('');
     setUserRole('player');
     setPage('home');
