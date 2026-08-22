@@ -1,0 +1,119 @@
+[
+  {
+    "id": 1,
+    "name": "Ashutosh Singh",
+    "wallet": 1110,
+    "joined": [
+      2,
+      3
+    ],
+    "activity": [
+      {
+        "id": 1787351830837,
+        "label": "Tournament entry — Pro League Qualifier",
+        "amount": -100,
+        "kind": "red",
+        "time": "22 Aug 2026, 4:07 am"
+      },
+      {
+        "id": 1787351823897,
+        "label": "Tournament entry — Bermuda Blitz",
+        "amount": -30,
+        "kind": "red",
+        "time": "22 Aug 2026, 4:07 am"
+      },
+      {
+        "id": 1,
+        "label": "Wallet top-up",
+        "amount": 500,
+        "kind": "green",
+        "time": "Today, 4:43 PM"
+      },
+      {
+        "id": 2,
+        "label": "Winner reward — Erangel Elite",
+        "amount": 1200,
+        "kind": "green",
+        "time": "Aug 01, 9:31 PM"
+      }
+    ],
+    "leaderboard": [
+      {
+        "rank": 4,
+        "name": "BlazeOp",
+        "matches": 112,
+        "winRate": "31%",
+        "earnings": "₹31,220"
+      },
+      {
+        "rank": 5,
+        "name": "FrostByte",
+        "matches": 98,
+        "winRate": "28%",
+        "earnings": "₹27,680"
+      },
+      {
+        "rank": 6,
+        "name": "AlphaRush",
+        "matches": 81,
+        "winRate": "35%",
+        "earnings": "₹25,100"
+      }
+    ],
+    "stats": {
+      "winnings": 8750,
+      "matches": 47,
+      "wins": 12
+    }
+  },
+  {
+    "id": 1787354157796,
+    "name": "Ashutosh Das",
+    "wallet": 1240,
+    "joined": [],
+    "activity": [
+      {
+        "id": 1,
+        "label": "Wallet top-up",
+        "amount": 500,
+        "kind": "green",
+        "time": "Today, 4:43 PM"
+      },
+      {
+        "id": 2,
+        "label": "Winner reward — Erangel Elite",
+        "amount": 1200,
+        "kind": "green",
+        "time": "Aug 01, 9:31 PM"
+      }
+    ],
+    "leaderboard": [
+      {
+        "rank": 4,
+        "name": "BlazeOp",
+        "matches": 112,
+        "winRate": "31%",
+        "earnings": "₹31,220"
+      },
+      {
+        "rank": 5,
+        "name": "FrostByte",
+        "matches": 98,
+        "winRate": "28%",
+        "earnings": "₹27,680"
+      },
+      {
+        "rank": 6,
+        "name": "AlphaRush",
+        "matches": 81,
+        "winRate": "35%",
+        "earnings": "₹25,100"
+      }
+    ],
+    "stats": {
+      "winnings": 8750,
+      "matches": 47,
+      "wins": 12
+    }
+  }
+]

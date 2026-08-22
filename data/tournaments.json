@@ -1,0 +1,38 @@
+[
+  {
+    "id": 1,
+    "game": "BGMI",
+    "title": "Midnight Mayhem",
+    "mode": "Squad • Erangel",
+    "fee": 50,
+    "prize": "₹5,000",
+    "spots": "63/100",
+    "time": "Today, 9:00 PM",
+    "tag": "HOT",
+    "color": "purple"
+  },
+  {
+    "id": 2,
+    "game": "Free Fire MAX",
+    "title": "Bermuda Blitz",
+    "mode": "Solo • Bermuda",
+    "fee": 30,
+    "prize": "₹2,000",
+    "spots": "41/48",
+    "time": "Today, 8:30 PM",
+    "tag": "FILLING FAST",
+    "color": "orange"
+  },
+  {
+    "id": 3,
+    "game": "BGMI",
+    "title": "Pro League Qualifier",
+    "mode": "Squad • Sanhok",
+    "fee": 100,
+    "prize": "₹12,000",
+    "spots": "18/100",
+    "time": "Tomorrow, 6:00 PM",
+    "tag": "FEATURED",
+    "color": "blue"
+  }
+]
