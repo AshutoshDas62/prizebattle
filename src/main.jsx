@@ -31,11 +31,13 @@ function App(){
 
  const refreshAppState=async()=>{
   try {
-   const [stateData, tournamentData, moderationData] = await Promise.all([
+  const [stateData, tournamentData] = await Promise.all([
     fetch('/api/app-state').then((res)=>res.json()),
-    fetch('/api/tournaments').then((res)=>res.json()),
-    fetch('/api/moderation').then((res)=>res.json()).catch(()=>({ results: [] }))
+   fetch('/api/tournaments').then((res)=>res.json())
    ]);
+  const moderationData = stateData.user?.role === 'admin'
+   ? await fetch('/api/moderation').then((res)=>res.ok ? res.json() : ({ results: [] }))
+   : { results: [] };
    const mergedState={ ...getInitialState(), ...stateData, activity: stateData.activity ?? [], leaderboard: stateData.leaderboard ?? [], stats: stateData.stats ?? { winnings: 8750, matches: 47, wins: 12 } };
    setAppState(mergedState);
    setTournaments(tournamentData.tournaments ?? []);
