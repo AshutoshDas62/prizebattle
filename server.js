@@ -5,7 +5,7 @@ import session from 'express-session';
 import cookieParser from 'cookie-parser';
 import crypto from 'crypto';
 import { fileURLToPath } from 'url';
-import { DatabaseSync } from 'node:sqlite';
+import Database from 'better-sqlite3';
 import pg from 'pg';
 
 const { Client } = pg;
@@ -40,7 +40,7 @@ async function initializeDatabase() {
     }
   }
 
-  db = new DatabaseSync(dbPath);
+  db = new Database(dbPath);
   db.exec('PRAGMA journal_mode=WAL;');
   db.exec(`
     CREATE TABLE IF NOT EXISTS tournaments (
