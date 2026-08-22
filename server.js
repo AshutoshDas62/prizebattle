@@ -7,6 +7,8 @@ import crypto from 'crypto';
 import { fileURLToPath } from 'url';
 import Database from 'better-sqlite3';
 import pg from 'pg';
+import { cert, getApps, initializeApp } from 'firebase-admin/app';
+import { getAuth } from 'firebase-admin/auth';
 
 const { Client } = pg;
 
@@ -24,6 +26,17 @@ const usePostgres = Boolean(databaseUrl);
 let db = null;
 let pgClient = null;
 const DEFAULT_USER_PASSWORD = 'prizebattle123';
+const adminPhoneNumber = process.env.ADMIN_PHONE_NUMBER || '';
+const firebaseAdminEnabled = Boolean(process.env.FIREBASE_PROJECT_ID && process.env.FIREBASE_CLIENT_EMAIL && process.env.FIREBASE_PRIVATE_KEY);
+const firebaseAdmin = firebaseAdminEnabled
+  ? getAuth(getApps().length ? getApps()[0] : initializeApp({
+    credential: cert({
+      projectId: process.env.FIREBASE_PROJECT_ID,
+      clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+      privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n')
+    })
+  }))
+  : null;
 
 async function initializeDatabase() {
   if (usePostgres) {
@@ -66,7 +79,9 @@ async function initializeDatabase() {
       leaderboard TEXT,
       stats TEXT,
       password_hash TEXT,
-      password_salt TEXT
+      password_salt TEXT,
+      firebase_uid TEXT,
+      phone_e164 TEXT
     );
 
     CREATE TABLE IF NOT EXISTS match_results (
@@ -255,6 +270,20 @@ function seedUsersTable() {
   }
 }
 
+function ensureFirebaseColumns() {
+  if (!db) {
+    return;
+  }
+
+  const columns = db.prepare('PRAGMA table_info(users)').all().map((column) => column.name);
+  if (!columns.includes('firebase_uid')) {
+    db.exec('ALTER TABLE users ADD COLUMN firebase_uid TEXT;');
+  }
+  if (!columns.includes('phone_e164')) {
+    db.exec('ALTER TABLE users ADD COLUMN phone_e164 TEXT;');
+  }
+}
+
 function migrateAdminName() {
   if (!db) {
     return;
@@ -306,7 +335,9 @@ function normalizeUser(row) {
     stats: jsonValue(row.stats, { winnings: 0, matches: 0, wins: 0 }),
     role: row.role || 'player',
     passwordHash: row.password_hash || '',
-    passwordSalt: row.password_salt || ''
+    passwordSalt: row.password_salt || '',
+    firebaseUid: row.firebase_uid || '',
+    phoneNumber: row.phone_e164 || ''
   };
 }
 
@@ -460,6 +491,7 @@ function requireAdmin(req, res, next) {
 
 seedTournamentCatalog();
 seedUsersTable();
+ensureFirebaseColumns();
 migrateAdminName();
 
 let tournaments = getTournamentCatalog();
@@ -647,6 +679,40 @@ app.post('/api/login', (req, res) => {
 
   req.session.user = { id: user.id, name: user.name, email: user.email || '', role: user.role || 'player' };
   return res.json({ success: true, user: req.session.user });
+});
+
+app.post('/api/auth/firebase', async (req, res) => {
+  if (!firebaseAdmin) {
+    return res.status(503).json({ success: false, message: 'Phone login is not configured on the server' });
+  }
+
+  const authorization = req.headers.authorization || '';
+  const token = authorization.startsWith('Bearer ') ? authorization.slice(7) : '';
+  if (!token) {
+    return res.status(401).json({ success: false, message: 'Firebase token is required' });
+  }
+
+  try {
+    const decoded = await firebaseAdmin.verifyIdToken(token);
+    const phoneNumber = decoded.phone_number;
+    if (!phoneNumber) {
+      return res.status(400).json({ success: false, message: 'Verified phone number is missing' });
+    }
+
+    let user = readUsers().find((entry) => entry.firebaseUid === decoded.uid || entry.phoneNumber === phoneNumber);
+    if (!user) {
+      const generatedName = phoneNumber === adminPhoneNumber ? defaultProfile.name : `Player ${phoneNumber.slice(-4)}`;
+      user = getOrCreateUser(generatedName, decoded.email || '', crypto.randomBytes(24).toString('hex'));
+    }
+
+    db.prepare('UPDATE users SET firebase_uid = ?, phone_e164 = ? WHERE id = ?').run(decoded.uid, phoneNumber, user.id);
+    user.firebaseUid = decoded.uid;
+    user.phoneNumber = phoneNumber;
+    req.session.user = { id: user.id, name: user.name, email: user.email || '', role: user.role || 'player' };
+    return res.json({ success: true, user: req.session.user });
+  } catch {
+    return res.status(401).json({ success: false, message: 'Invalid or expired Firebase token' });
+  }
 });
 
 app.put('/api/password', requireAuth, (req, res) => {
