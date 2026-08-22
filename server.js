@@ -541,10 +541,15 @@ app.post('/api/tournaments', (req, res) => {
   return res.json({ success: true, tournament });
 });
 
-app.get('/api/app-state', requireAuth, (req, res) => {
+app.get('/api/app-state', (req, res) => {
   const profile = getSessionProfile(req);
 
+  if (!profile) {
+    return res.json({ authenticated: false, user: null, wallet: 0, joined: [], activity: [], leaderboard: [], stats: { winnings: 0, matches: 0, wins: 0 }, email: '', role: '' });
+  }
+
   res.json({
+    authenticated: true,
     user: { ...req.session.user, email: profile.email || '', role: profile.role || 'player' },
     wallet: profile.wallet,
     joined: profile.joined,
