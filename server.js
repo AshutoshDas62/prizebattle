@@ -380,6 +380,7 @@ function getOrCreateUser(name, email = '', password = '') {
       name: normalizedName,
       email: email || '',
       id: undefined,
+      wallet: 0,
       role: 'player'
     };
     const result = insert.run(
