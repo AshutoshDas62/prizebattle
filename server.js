@@ -393,7 +393,7 @@ function authenticateUser(name, password = '') {
   return verifyPassword(passwordValue, user.passwordSalt, user.passwordHash) ? user : null;
 }
 
-function getOrCreateUser(name, email = '', password = '') {
+function getOrCreateUser(name, email = '', password = '', phoneNumber = '') {
   const normalizedName = (name || defaultProfile.name).trim() || defaultProfile.name;
   let user = getUserByName(normalizedName);
 
@@ -404,7 +404,7 @@ function getOrCreateUser(name, email = '', password = '') {
 
     const { salt, hash } = hashPassword(password || DEFAULT_USER_PASSWORD);
     const insert = db.prepare(
-      'INSERT INTO users (name, email, wallet, joined, activity, leaderboard, stats, password_hash, password_salt, role) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+      'INSERT INTO users (name, email, wallet, joined, activity, leaderboard, stats, password_hash, password_salt, role, phone_e164) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
     );
     const created = {
       ...structuredClone(defaultProfile),
@@ -424,7 +424,8 @@ function getOrCreateUser(name, email = '', password = '') {
       JSON.stringify(created.stats),
       hash,
       salt,
-      created.role
+      created.role,
+      phoneNumber
     );
     return normalizeUser({
       id: result.lastInsertRowid,
@@ -444,6 +445,11 @@ function getOrCreateUser(name, email = '', password = '') {
   if (email && !user.email) {
     user.email = email;
     writeUsers([user]);
+  }
+
+  if (phoneNumber && !user.phoneNumber) {
+    db.prepare('UPDATE users SET phone_e164 = ? WHERE id = ?').run(phoneNumber, user.id);
+    user.phoneNumber = phoneNumber;
   }
 
   if (password) {
@@ -702,7 +708,7 @@ app.post('/api/auth/firebase', async (req, res) => {
     let user = readUsers().find((entry) => entry.firebaseUid === decoded.uid || entry.phoneNumber === phoneNumber);
     if (!user) {
       const generatedName = phoneNumber === adminPhoneNumber ? defaultProfile.name : `Player ${phoneNumber.slice(-4)}`;
-      user = getOrCreateUser(generatedName, decoded.email || '', crypto.randomBytes(24).toString('hex'));
+      user = getOrCreateUser(generatedName, decoded.email || '', crypto.randomBytes(24).toString('hex'), phoneNumber);
     }
 
     db.prepare('UPDATE users SET firebase_uid = ?, phone_e164 = ? WHERE id = ?').run(decoded.uid, phoneNumber, user.id);
@@ -738,9 +744,13 @@ app.put('/api/password', requireAuth, (req, res) => {
 });
 
 app.post('/api/signup', (req, res) => {
-  const { name, email, password = '', confirmPassword = '' } = req.body || {};
-  if (!name || !email || !password) {
-    return res.status(400).json({ success: false, message: 'Name, email, and password are required' });
+  const { name, email, phone = '', password = '', confirmPassword = '' } = req.body || {};
+  const normalizedPhone = String(phone).trim();
+  if (!name || !email || !normalizedPhone || !password) {
+    return res.status(400).json({ success: false, message: 'Name, email, phone, and password are required' });
+  }
+  if (!/^\+[1-9]\d{7,14}$/.test(normalizedPhone)) {
+    return res.status(400).json({ success: false, message: 'Phone must use international format, for example +919812345678' });
   }
 
   if (password.length < 6) {
@@ -751,7 +761,12 @@ app.post('/api/signup', (req, res) => {
     return res.status(400).json({ success: false, message: 'Passwords do not match' });
   }
 
-  const user = getOrCreateUser(name, email, password);
+  const existingPhoneUser = readUsers().find((entry) => entry.phoneNumber === normalizedPhone && entry.name.toLowerCase() !== String(name).trim().toLowerCase());
+  if (existingPhoneUser) {
+    return res.status(409).json({ success: false, message: 'That phone number is already registered' });
+  }
+
+  const user = getOrCreateUser(name, email, password, normalizedPhone);
   req.session.user = { id: user.id, name: user.name, email: user.email || '', role: user.role || 'player' };
   return res.json({ success: true, user: req.session.user });
 });
